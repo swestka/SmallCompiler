@@ -45,15 +45,15 @@ class SyntacticalAnalysis
                        'READ'=>['STAT','STATLIST1'],
                        'IF'=>['STAT','STATLIST1']},
 
-        'STATLIST1' => {'a-z'  =>['STAT'],
-                        'WRITE'=>['STAT'],
-                        'READ'=>['STAT'],
-                        'IF'=>['STAT']},
+        'STATLIST1' => {'a-z'  =>['STATLIST'],
+                        'WRITE'=>['STATLIST'],
+                        'READ'=>['STATLIST'],
+                        'IF'=>['STATLIST']},
 
         'STAT'      => {'a-z'  =>['IDENT',':=','EXP',';'],
                         'WRITE'=>['WRITE','(','EXPLIST',')',';'],
                         'READ'=>['READ','(','IDLIST',')',';'],
-                        'IF'=>['BEXPR','THEN','STAT','STAT1',';']},
+                        'IF'=>['IF','BEXPR','THEN','STAT','STAT1',';']},
 
         'STAT1'     => {'ELSE'=>['ELSE','STAT']},
 
@@ -61,13 +61,18 @@ class SyntacticalAnalysis
 
         'IDLIST1'   => {','=>[',','IDLIST']},
 
-        'EXPLIST'   => {'('=>['EXP','EXPLIST1']},
+        'EXPLIST'   => {'('=>['EXP','EXPLIST1'],
+                        'a-z'=>['EXP','EXPLIST1'],
+                        '+'=>['EXP','EXPLIST1'],
+                        '-'=>['EXP','EXPLIST1'],
+                        '1-9'=>['EXP','EXPLIST1']},
 
         'EXPLIST1'  => {','=>[',','EXPLIST']},
 
         'EXP'       => {'('=>['FACTOR','EXP1'],
                         'a-z'=>['FACTOR','EXP1'],
                         '+'=>['FACTOR','EXP1'],
+                        '-'=>['FACTOR','EXP1'],
                         '1-9'=>['FACTOR','EXP1']},
 
         'EXP1'      => {'+'=>['OP','FACTOR','EXP1'],
@@ -77,7 +82,8 @@ class SyntacticalAnalysis
                         'a-z'=>['IDENT'],
                         '+'=>['NUM'],
                         '-'=>['NUM'],
-                        '1-9'=>['NUM']},
+                        '1-9'=>['NUM'],
+                        '0'=>['0']},
 
         'OP'        => {'+'=>['+'],
                         '-'=>['-']},
@@ -97,7 +103,7 @@ class SyntacticalAnalysis
         'BTERM1'    => {'AND'=>['AND','BFACTOR','BEXPR1']},
 
         'BFACTOR'   => {'NOT'=>['NOT','BFACTOR'],
-                        '('=>['(','BEXP',')'],
+                        '('=>['(','BEXPR',')'],
                         'TRUE'=>['TRUE'],
                         'FALSE'=>['FALSE']},
 
@@ -111,8 +117,8 @@ class SyntacticalAnalysis
                         '-'=>['-','DIG19','NUM1'],
                         '1-9'=>['DIG19','NUM1']},
 
-        'NUM1'      => {'1-9'=>['NUM1'],
-                        '0'=>['NUM1']},
+        'NUM1'      => {'1-9'=>['1-9','NUM1'],
+                        '0'=>['0','NUM1']},
 
         'LETTER'    => {'a-z'=>['a-z']},
 

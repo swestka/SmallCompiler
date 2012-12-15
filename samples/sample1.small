@@ -1,7 +1,8 @@
 BEGIN
   READ(a, b);
-  d:=3456-+4;
-  IF TRUE OR NOT (TRUE) THEN
-    WRITE(a, d); ELSE
-    WRITE(b, d);;
+  a := -1 - b + -3;
+  IF TRUE THEN
+    c := 20;
+
+  WRITE(c);
 END

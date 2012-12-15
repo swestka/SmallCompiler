@@ -23,7 +23,7 @@ class LexicalAnalysis
           'READ',
           'IF',
           'THEN',
-          'END',
+          'ELSE',
           'IDENT',
           '+',
           '-',
