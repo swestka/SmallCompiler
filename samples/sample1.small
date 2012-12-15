@@ -1,0 +1,7 @@
+BEGIN
+  READ(a, b);
+  d:=3456-+4;
+  IF TRUE OR NOT (TRUE) THEN
+    WRITE(a, d); ELSE
+    WRITE(b, d);;
+END
