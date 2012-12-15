@@ -1,8 +1,10 @@
 BEGIN
-  READ(a, b);
-  a := -1 - b + -3;
-  IF TRUE THEN
-    c := 20;
+  IF FALSE OR (NOT TRUE OR (FALSE)) THEN
+    c := 51 + 45 +a;
+  ;
 
-  WRITE(c);
+  IF (TRUE OR FALSE) OR TRUE THEN
+    IF TRUE OR FALSE THEN WRITE(a, b, c, d, e, f); ELSE a:=1; ;
+  ;
+  READ(f);
 END

@@ -1,17 +1,22 @@
 class LexicalAnalysis
 
-  attr_accessor :data, :length, :position, :last_position
+  attr_accessor :data, :length, :position, :last_position, :line
 
   attr_accessor :terminals
 
+  # konstruktor
+  # param String filename
   def initialize(filename)
     file = File.open(filename, "r")
     self.data = file.read
     file.close
 
+    # inicializacia atributov
+    self.line = [0]
     self.length = data.length
     self.position = self.last_position = 0
 
+    # zoznam terminalov a operatorov
     self.terminals = [
           'BEGIN',
           'END',
@@ -37,55 +42,93 @@ class LexicalAnalysis
 
   end
 
+  # vracia lexikalnu jednotku
   def get_lexical_unit()
+    # ulozenie vychodzej pozicie
+    self.last_position = position
 
+    # vynechanie medzier
     while space() do
-      self.position+=1
+      break unless position_increase()
       self.last_position+=1
     end
 
+    # prechadza cez ne-alfanumericke znaky
     while not alnum() and not space() do
-      self.position+=1
+      break unless position_increase()
     end
 
+    # ak neboli najdene ziadne ne-alfanum. znaky
     if position == self.last_position
+      # prechadza cez alfanumericke
       while alnum() do
-        self.position+=1
+        break unless position_increase()
       end
     end
 
+    # jednotka - sekvencia vyhradne alnum. znakov
+    # alebo vyhradne nealnum. znakov
     unit = data[last_position..position-1]
-    print unit
+    return nil if unit.nil?
 
+    # je sekvencia znakov klucove slovo?
     if terminals.include? unit.upcase
-      self.last_position = position
+      # koniec, retazec odovzdany syntakt. analyzatoru
       return unit
     else
+      # retazec nie je kluc.slovo, vratime len jeho prvy znak
       unit = data[last_position]
-      self.last_position+=1
-      self.position = last_position
-      print unit
+      self.position = last_position + 1
 
-      if terminals.include? unit.upcase
+      # ak je prvy znak klucovy symbol
+      if unit.nil? or terminals.include? unit.upcase
         return unit
       end
-
-
     end
 
-    if /[+-]?\d+/ === unit
+    # zatriedenie symbolov
+
+    if /[+-]?[1-9]+/ === unit
+      #cislo  od 1 do 9
       return '1-9'
-    else
+    elsif /[a-zA-Z]+/ === unit
+      #pismeno
       return 'a-z'
+    else
+      # 0 alebo iny znak
+      return unit
     end
 
   end
 
+  # true ak je aktualny znak whitespace
   def space()
-    return /\s/ === data[position]
+    # pocitanie riadkov
+    self.line.push position if /\n/ === data[position]
+
+    /\s/ === data[position]
   end
 
+  # true ak je aktualny znak alfanum. znak
   def alnum()
-    return /[a-zA-Z0-9]+/ === data[position]
+    /[a-zA-Z0-9]+/ === data[position]
+  end
+
+  # posun pozicie na vstupe
+  # true - ak sa posunula
+  # false - ak je koniec vstupu
+  def position_increase()
+    if self.position < length
+      self.position+=1
+      return true
+    end
+
+    false
+  end
+
+  # navrat pozicie na danu uroven
+  # default: posledna ulozena pozicia
+  def rewind(pos = self.last_position)
+    self.position = pos
   end
 end

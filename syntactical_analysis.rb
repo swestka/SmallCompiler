@@ -1,42 +1,96 @@
 class SyntacticalAnalysis
-  attr_accessor :table, :stack, :input, :lex_analysis
+  attr_accessor :table, :stack, :input, :lex_analysis, :errors
 
   def analyse
-
-    finish = false
+    # nacitanie vstupu
     self.input = lex_analysis.get_lexical_unit()
+    # vstup je prazdny => koniec
+    finalize() if self.input.nil?
 
-    while not finish
+    # kym nie je zasobnik prazdny
+    while not stack.empty?
+      # pop zo zasobnika
       stack_top = stack.shift
 
+      # ak vstup nie je neterminal
       if not table.has_key?(stack_top)
+
+        # vstup sa zhoduje s vrchom zasobnika
         if input == stack_top
+          # vylucenie
+          # nacitanie dalsieho vstupu
           self.input = lex_analysis.get_lexical_unit()
+          break if self.input.nil?
           next
         else
-          puts 'error'
+          # chyba
+          process_error('expecting', :stack_top => stack_top)
+          next
         end
       end
 
+      # v tabulke je zaznam pre symbol zasobnika a vstup
       if table[stack_top].has_key?(input)
+        # nacitanie pravidiel z tabulky
         rules = table[stack_top][input]
+
+        # pravidla su ulozene v Array
         if rules.kind_of?(Array)
           self.stack = rules + self.stack
+
         else
+          # inak je to kod chyby
           process_error(rules)
         end
       end
-
-      finish = stack.empty?
     end
+
+    # ukoncenie
+    finalize()
   end
 
-  def process_error(code)
-    puts 'Error happened'
+  # spracovanie chyby
+  # vseobecny vypis
+  # switch s postupom opravy chyb
+  def process_error(code, params= {})
+    error =  'Error occured: line '+lex_analysis.line.uniq.length.to_s+': '
+    case code
+      when 'expecting'
+        error += 'expecting "'+params[:stack_top]+'", found "'+input+'"'
+        self.input = params[:stack_top]
+        self.stack.unshift(params[:stack_top])
+        lex_analysis.rewind()
+      else
+        error += code
+    end
+
+    # vlozenie chyby do zoznamu
+    self.errors.push error
   end
 
+
+  def finalize()
+    # zasobnik nie je prazdny - program nesuhlasi s gramatikou
+    if stack.empty? and not input.nil?
+      process_error('Invalid end of program.')
+    end
+
+    # ak su chyby - vypis
+    if not errors.empty?
+      errors.each do |e| puts e end
+    else
+      puts 'Success.'
+    end
+    return
+  end
+
+  # konstruktor
   def initialize
+    # inicializacia
     self.stack = ['PROG']
+    self.errors = []
+
+    # tabulka
     self.table = {
         'PROG'     => {'BEGIN'=>['BEGIN','STATLIST','END']},
 
