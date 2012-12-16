@@ -23,7 +23,7 @@ class SyntacticalAnalysis
           break if self.input.nil?
           next
         else
-          # chyba
+          # chyba - ocakava sa iny znak ako je na vstupe
           process_error('expecting', :stack_top => stack_top)
           next
         end
@@ -37,11 +37,15 @@ class SyntacticalAnalysis
         # pravidla su ulozene v Array
         if rules.kind_of?(Array)
           self.stack = rules + self.stack
-
+        elsif rules == 'e'
+          # epsilonove pravidlo, pokracujeme s dalsim prvkom zo zasobnika
+          next
         else
           # inak je to kod chyby
           process_error(rules)
         end
+      else
+        process_error('unexpected', :stack_top => stack_top)
       end
     end
 
@@ -57,9 +61,21 @@ class SyntacticalAnalysis
     case code
       when 'expecting'
         error += 'expecting "'+params[:stack_top]+'", found "'+input+'"'
-        self.input = params[:stack_top]
+        position = lex_analysis.position
+        while not (input.nil? or params[:stack_top] == input)
+          self.input = lex_analysis.get_lexical_unit()
+        end
+        if self.input.nil?
+          self.input = params[:stack_top]
+          lex_analysis.rewind(position)
+        end
+
         self.stack.unshift(params[:stack_top])
-        lex_analysis.rewind()
+      when 'unexpected'
+        error += 'Unexpected symbol "' + input + '".'
+        while not table[params[:stack_top]].has_key? self.input
+          self.input = lex_analysis.get_lexical_unit()
+        end
       else
         error += code
     end
@@ -76,8 +92,9 @@ class SyntacticalAnalysis
     end
 
     # ak su chyby - vypis
+    self.errors += lex_analysis.errors
     if not errors.empty?
-      errors.each do |e| puts e end
+      errors.uniq.each do |e| puts e end
     else
       puts 'Success.'
     end
@@ -94,92 +111,121 @@ class SyntacticalAnalysis
     self.table = {
         'PROG'     => {'BEGIN'=>['BEGIN','STATLIST','END']},
 
-        'STATLIST' => {'a-z'  =>['STAT','STATLIST1'],
-                       'WRITE'=>['STAT','STATLIST1'],
-                       'READ'=>['STAT','STATLIST1'],
-                       'IF'=>['STAT','STATLIST1']},
+        'STATLIST' => {'a-z'  =>['STAT','STATLIST0'],
+                       'WRITE'=>['STAT','STATLIST0'],
+                       'READ'=>['STAT','STATLIST0'],
+                       'IF'=>['STAT','STATLIST0']},
 
-        'STATLIST1' => {'a-z'  =>['STATLIST'],
+        'STATLIST0' => {'a-z'  =>['STATLIST'],
                         'WRITE'=>['STATLIST'],
                         'READ'=>['STATLIST'],
-                        'IF'=>['STATLIST']},
+                        'IF'=>['STATLIST'],
+                        'END'=>'e'},
 
         'STAT'      => {'a-z'  =>['IDENT',':=','EXP',';'],
                         'WRITE'=>['WRITE','(','EXPLIST',')',';'],
                         'READ'=>['READ','(','IDLIST',')',';'],
-                        'IF'=>['IF','BEXPR','THEN','STAT','STAT1',';']},
+                        'IF'=>['IF','BEXPR','THEN','STAT','STATTT',';']},
 
-        'STAT1'     => {'ELSE'=>['ELSE','STAT']},
+        'STATTT'     => {'ELSE'=>['ELSE','STAT'],
+                        ';'=>'e'},
 
-        'IDLIST'    => {'a-z'=>['IDENT','IDLIST1']},
+        'IDLIST'    => {'a-z'=>['IDENT','IDLIST0']},
 
-        'IDLIST1'   => {','=>[',','IDLIST']},
+        'IDLIST0'   => {','=>[',','IDLIST'],
+                        ')'=>'e'},
 
-        'EXPLIST'   => {'('=>['EXP','EXPLIST1'],
-                        'a-z'=>['EXP','EXPLIST1'],
-                        '+'=>['EXP','EXPLIST1'],
-                        '-'=>['EXP','EXPLIST1'],
-                        '1-9'=>['EXP','EXPLIST1']},
+        'EXPLIST'   => {'('=>['EXP','EXPLIST0'],
+                        'a-z'=>['EXP','EXPLIST0'],
+                        '+'=>['EXP','EXPLIST0'],
+                        '-'=>['EXP','EXPLIST0'],
+                        '1-9'=>['EXP','EXPLIST0']},
 
-        'EXPLIST1'  => {','=>[',','EXPLIST']},
+        'EXPLIST0'  => {','=>[',','EXPLIST'],
+                        ')'=>'e'},
 
-        'EXP'       => {'('=>['FACTOR','EXP1'],
-                        'a-z'=>['FACTOR','EXP1'],
-                        '+'=>['FACTOR','EXP1'],
-                        '-'=>['FACTOR','EXP1'],
-                        '1-9'=>['FACTOR','EXP1']},
+        'EXP'       => {'('=>['FACTOR','EXPPP'],
+                        'a-z'=>['FACTOR','EXPPP'],
+                        '+'=>['FACTOR','EXPPP'],
+                        '-'=>['FACTOR','EXPPP'],
+                        '1-9'=>['FACTOR','EXPPP']},
 
-        'EXP1'      => {'+'=>['OP','FACTOR','EXP1'],
-                        '-'=>['OP','FACTOR','EXP1']},
+        'EXPPP'      => {'+'=>['OP','FACTOR','EXPPP'],
+                        '-'=>['OP','FACTOR','EXPPP'],
+                        ';'=>'e',
+                        ')'=>'e',
+                        ','=>'e'},
 
         'FACTOR'    => {'('=>['(','EXP',')'],
                         'a-z'=>['IDENT'],
                         '+'=>['NUM'],
                         '-'=>['NUM'],
                         '1-9'=>['NUM'],
-                        '0'=>['0']},
+                        '0'=>['0']},   # ????
 
         'OP'        => {'+'=>['+'],
                         '-'=>['-']},
 
-        'BEXPR'     => {'NOT'=>['BTERM','BEXPR1'],
-                        '('=>['BTERM','BEXPR1'],
-                        'TRUE'=>['BTERM','BEXPR1'],
-                        'FALSE'=>['BTERM','BEXPR1']},
+        'BEXPR'     => {'NOT'=>['BTERM','BEXPRRR'],
+                        '('=>['BTERM','BEXPRRR'],
+                        'TRUE'=>['BTERM','BEXPRRR'],
+                        'FALSE'=>['BTERM','BEXPRRR']},
 
-        'BEXPR1'    => {'OR'=>['OR','BTERM','BEXPR']},
+        'BEXPRRR'    => {'OR'=>['OR','BTERM','BEXPR'],
+                         'THEN'=>'e',
+                         ')'=>'e'},
 
-        'BTERM'     => {'NOT'=>['BFACTOR','BTERM1'],
-                        '('=>['BFACTOR','BTERM1'],
-                        'TRUE'=>['BFACTOR','BTERM1'],
-                        'FALSE'=>['BFACTOR','BTERM1']},
+        'BTERM'     => {'NOT'=>['BFACTOR','BTERMMM'],
+                        '('=>['BFACTOR','BTERMMM'],
+                        'TRUE'=>['BFACTOR','BTERMMM'],
+                        'FALSE'=>['BFACTOR','BTERMMM']},
 
-        'BTERM1'    => {'AND'=>['AND','BFACTOR','BEXPR1']},
+        'BTERMMM'    => {'AND'=>['AND','BFACTOR','BTERMMM'],
+                        'THEN'=>'e',
+                        'OR'=>'e',
+                        ')'=>'e'},
 
         'BFACTOR'   => {'NOT'=>['NOT','BFACTOR'],
                         '('=>['(','BEXPR',')'],
                         'TRUE'=>['TRUE'],
                         'FALSE'=>['FALSE']},
 
-        'IDENT'     => {'a-z'=>['LETTER','IDENT1']},
+        'IDENT'     => {'a-z'=>['LETTER','IDENTTT']},
 
-        'IDENT1'    => {'a-z'=>['LETTER','IDENT1'],
-                        '1-9'=>['DIG09','IDENT1'],
-                        '0'=>['DIG09','IDENT1']},
+        'IDENTTT'    => {'a-z'=>['LETTER','IDENTTT'],
+                        '1-9'=>['DIG09','IDENTTT'],
+                        '0'=>['DIG09','IDENTTT'],
+                        ';'=>'e',
+                        ':='=>'e',
+                        ')'=>'e',
+                        '+'=>'e',
+                        '-'=>'e',
+                        'THEN'=>'e',
+                        ','=>'e'},
 
-        'NUM'       => {'+'=>['+','DIG19','NUM1'],
-                        '-'=>['-','DIG19','NUM1'],
-                        '1-9'=>['DIG19','NUM1']},
+        'NUM'       => {'+'=>['OPP','DIG19','DIGITTT'],
+                        '-'=>['OPP','DIG19','DIGITTT'],
+                        '1-9'=>['OPP','DIG19','DIGITTT']},
 
-        'NUM1'      => {'1-9'=>['1-9','NUM1'],
-                        '0'=>['0','NUM1']},
+        'OPP'       => {'+'=>['+'],
+                        '-'=>['-'],
+                        '1-9'=>'e'},
+
+        'DIGITTT'      => {'1-9'=>['DIG09','DIGITTT'],
+                        '0'=>['DIG09','DIGITTT'],
+                        ';'=>'e',
+                        ')'=>'e',
+                        '+'=>'e',
+                        '-'=>'e',
+                        ','=>'e'},
 
         'LETTER'    => {'a-z'=>['a-z']},
 
-        'DIG19'     => {'1-9'=>['1-9']},
+        'DIG19'     => {'1-9'=>['1-9'],
+                        },
 
         'DIG09'     => {'0'=>['0'],
-                        '1-9'=>['1-9']}
+                        '1-9'=>['1-9']},
 
       }
   end

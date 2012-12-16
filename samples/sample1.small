@@ -1,10 +1,10 @@
 BEGIN
-  IF FALSE OR (NOT TRUE OR (FALSE)) THEN
-    c := 51 + 45 +a;
+  READ(a, b, c, d);
+  e := -a+(b-c-d);
+  IF TRUE AND NOT (FALSE) THEN
+    a:=-9;
+  ELSE
+    e:=e + 30;
   ;
-
-  IF (TRUE OR FALSE) OR TRUE THEN
-    IF TRUE OR FALSE THEN WRITE(a, b, c, d, e, f); ELSE a:=1; ;
-  ;
-  READ(f);
+  WRITE(4);
 END

@@ -1,6 +1,6 @@
 class LexicalAnalysis
 
-  attr_accessor :data, :length, :position, :last_position, :line
+  attr_accessor :data, :length, :position, :last_position, :line, :errors
 
   attr_accessor :terminals
 
@@ -12,6 +12,7 @@ class LexicalAnalysis
     file.close
 
     # inicializacia atributov
+    self.errors = []
     self.line = [0]
     self.length = data.length
     self.position = self.last_position = 0
@@ -56,6 +57,7 @@ class LexicalAnalysis
     # prechadza cez ne-alfanumericke znaky
     while not alnum() and not space() do
       break unless position_increase()
+      break if terminals.include? data[last_position..position-1]
     end
 
     # ak neboli najdene ziadne ne-alfanum. znaky
@@ -94,11 +96,13 @@ class LexicalAnalysis
     elsif /[a-zA-Z]+/ === unit
       #pismeno
       return 'a-z'
-    else
-      # 0 alebo iny znak
+    elsif '0' === unit
+      # 0
       return unit
+    else
+      self.errors.push 'Error: line '+line.uniq.length.to_s+': invalid characer '+unit
+      return get_lexical_unit
     end
-
   end
 
   # true ak je aktualny znak whitespace
