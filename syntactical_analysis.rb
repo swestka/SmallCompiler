@@ -71,11 +71,12 @@ class SyntacticalAnalysis
         end
 
         self.stack.unshift(params[:stack_top])
+
       when 'unexpected'
         error += 'Unexpected symbol "' + input + '".'
-        while not table[params[:stack_top]].has_key? self.input
-          self.input = lex_analysis.get_lexical_unit()
-        end
+
+        stack.shift
+
       else
         error += code
     end
@@ -221,7 +222,7 @@ class SyntacticalAnalysis
 
         'LETTER'    => {'a-z'=>['a-z']},
 
-        'DIG19'     => {'1-9'=>['1-9'],
+        'DIG19'     => {'1-9'=>['1-9']
                         },
 
         'DIG09'     => {'0'=>['0'],

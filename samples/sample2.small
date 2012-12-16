@@ -1,1 +1,11 @@
-BEGIN a:= a+a); END
+BEGIN
+    READ ( a  d , b
+    , a);
+  	ca:= a + b;
+ 	IF ( TRUE ) THEN
+        WRITE     (e) ;
+    ELSE
+        WRITE
+        ( a) ;
+    ;
+END

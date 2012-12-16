@@ -1,6 +1,6 @@
 class LexicalAnalysis
 
-  attr_accessor :data, :length, :position, :last_position, :line, :errors
+  attr_accessor :data, :length, :position, :last_position, :line, :errors, :skip_spaces
 
   attr_accessor :terminals
 
@@ -12,6 +12,7 @@ class LexicalAnalysis
     file.close
 
     # inicializacia atributov
+    self.skip_spaces = true
     self.errors = []
     self.line = [0]
     self.length = data.length
@@ -55,7 +56,7 @@ class LexicalAnalysis
     end
 
     # prechadza cez ne-alfanumericke znaky
-    while not alnum() and not space() do
+    while not alnum() do
       break unless position_increase()
       break if terminals.include? data[last_position..position-1]
     end
@@ -63,27 +64,29 @@ class LexicalAnalysis
     # ak neboli najdene ziadne ne-alfanum. znaky
     if position == self.last_position
       # prechadza cez alfanumericke
-      while alnum() do
+      while alnum() or space() do
+        break if space() and terminals.include? data[last_position..position-1]
         break unless position_increase()
       end
     end
+
 
     # jednotka - sekvencia vyhradne alnum. znakov
     # alebo vyhradne nealnum. znakov
     unit = data[last_position..position-1]
     return nil if unit.nil?
-
     # je sekvencia znakov klucove slovo?
     if terminals.include? unit.upcase
       # koniec, retazec odovzdany syntakt. analyzatoru
       return unit
     else
+      process_error('invalid') if unit.strip.scan(/\s/).length > 0
       # retazec nie je kluc.slovo, vratime len jeho prvy znak
       unit = data[last_position]
       self.position = last_position + 1
 
       # ak je prvy znak klucovy symbol
-      if unit.nil? or terminals.include? unit.upcase
+      if unit.nil? or terminals.include? data[last_position].upcase
         return unit
       end
     end
@@ -100,7 +103,7 @@ class LexicalAnalysis
       # 0
       return unit
     else
-      self.errors.push 'Error: line '+line.uniq.length.to_s+': invalid characer '+unit
+      self.errors.push 'Error: line '+line.uniq.length.to_s+': invalid characer "'+unit+'"'
       return get_lexical_unit
     end
   end
@@ -109,13 +112,15 @@ class LexicalAnalysis
   def space()
     # pocitanie riadkov
     self.line.push position if /\n/ === data[position]
-
     /\s/ === data[position]
+
   end
 
   # true ak je aktualny znak alfanum. znak
   def alnum()
-    /[a-zA-Z0-9]+/ === data[position]
+    is_alnum = /[a-zA-Z0-9]+/ === data[position]
+    self.skip_spaces = (not is_alnum)
+    return is_alnum
   end
 
   # posun pozicie na vstupe
@@ -134,5 +139,14 @@ class LexicalAnalysis
   # default: posledna ulozena pozicia
   def rewind(pos = self.last_position)
     self.position = pos
+  end
+
+  def process_error(code)
+    error = 'Error: at line '+line.uniq.length.to_s+': '
+    case code
+      when 'invalid'
+        error+=' Invalid character "'+data[position]+'"'
+    end
+    self.errors.push error
   end
 end
