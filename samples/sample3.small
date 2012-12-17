@@ -1,0 +1,11 @@
+BEGIN
+READ ( a ) ;
+  	b = a + 5
+ 	IF ( TRUE ) THEN 
+b := a + 10 ;
+WRITE ( a ) ;
+ELSE
+	b := b - 1 ;
+;
+WRITE ( b )
+END

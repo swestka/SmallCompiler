@@ -1,5 +1,5 @@
 class SyntacticalAnalysis
-  attr_accessor :table, :stack, :input, :lex_analysis, :errors
+  attr_accessor :table, :stack, :input, :lex_analysis, :errors, :output
 
   def analyse
     # nacitanie vstupu
@@ -7,9 +7,12 @@ class SyntacticalAnalysis
     # vstup je prazdny => koniec
     finalize() if self.input.nil?
 
+    puts 'IN: '+self.input if self.output
     # kym nie je zasobnik prazdny
     while not stack.empty?
       # pop zo zasobnika
+
+      puts self.stack.inspect if self.output
       stack_top = stack.shift
 
       # ak vstup nie je neterminal
@@ -20,6 +23,7 @@ class SyntacticalAnalysis
           # vylucenie
           # nacitanie dalsieho vstupu
           self.input = lex_analysis.get_lexical_unit()
+          puts 'IN: '+self.input if self.output
           break if self.input.nil?
           next
         else
@@ -60,9 +64,12 @@ class SyntacticalAnalysis
     error =  'Error occured: line '+lex_analysis.line.uniq.length.to_s+': '
     case code
       when 'expecting'
+        puts 'Spracovanie chyby: terminal na vrchu zasobnika, nezodpovedajuci vstup' if self.output
         error += 'expecting "'+params[:stack_top]+'", found "'+input+'"'
         position = lex_analysis.position
+        puts 'Prechadzam vstup' if self.output
         while not (input.nil? or params[:stack_top] == input)
+          puts 'Na vstupe '+self.input if self.output
           self.input = lex_analysis.get_lexical_unit()
         end
         if self.input.nil?
@@ -73,10 +80,13 @@ class SyntacticalAnalysis
         self.stack.unshift(params[:stack_top])
 
       when 'unexpected'
+        puts 'Spracovanie chyby: neterminal na vrchu zasobnika, neexistujuci prechod k danemu vstupu' if self.output
         error += 'Unexpected symbol "' + input + '".'
-
-        stack.shift
-
+        puts 'Vyprazdnujem zasobnik:' if self.output
+        while self.stack.length> 0 and not table.has_key? self.stack[0]
+          sym = self.stack.shift
+          puts 'Vybrany symbol '+sym if self.output
+        end
       else
         error += code
     end

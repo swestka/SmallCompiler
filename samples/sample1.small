@@ -1,10 +1,5 @@
-BEGIN
-  READ(a, bs, c, d);
-  e := a +(b-c-d);
-  IF TRUE AND NOT (FALSE) THEN
-    a:=-9;
-  ELSE
-    e:=e  + 30;
-  ;
-  WRITE(4);
+BEGIN 
+a := 5 ;
+b := 10 ;
+WRITE ( a + b ) ; 
 END
