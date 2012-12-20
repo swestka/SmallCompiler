@@ -23,8 +23,8 @@ class SyntacticalAnalysis
           # vylucenie
           # nacitanie dalsieho vstupu
           self.input = lex_analysis.get_lexical_unit()
-          puts 'IN: '+self.input if self.output
           break if self.input.nil?
+          puts 'IN: ' + self.input if self.output
           next
         else
           # chyba - ocakava sa iny znak ako je na vstupe

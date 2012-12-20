@@ -1,6 +1,6 @@
 BEGIN
 READ ( a ) ;
-  	b = a + 5
+  	b := a + 5;
  	IF ( TRUE ) THEN 
 b := a + 10 ;
 WRITE ( a ) ;
